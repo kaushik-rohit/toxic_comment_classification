@@ -8,6 +8,7 @@ import re, string
 
 train = pd.read_csv('data/train.csv')
 test = pd.read_csv('data/test.csv')
+subm = pd.read_csv('data/sample_submission.csv')
 #%%
 
 train.head()
@@ -40,3 +41,36 @@ test_term_doc = vec.transform(test[COMMENT])
 
 
 # %%
+#%%
+
+def pr(y_i, y):
+    p = x[y==y_i].sum(0)
+    return (p+1) / ((y==y_i).sum()+1)
+
+x = trn_term_doc
+test_x = test_term_doc
+# %%
+
+#%%
+def get_mdl(y):
+    y = y.values
+    r = np.log(pr(1,y) / pr(0,y))
+    m = LogisticRegression(C=4, dual=True)
+    x_nb = x.multiply(r)
+    return m.fit(x_nb, y), r
+
+preds = np.zeros((len(test), len(label_cols)))
+
+for i, j in enumerate(label_cols):
+    print('fit', j)
+    m,r = get_mdl(train[j])
+    preds[:,i] = m.predict_proba(test_x.multiply(r))[:,1]
+
+#%%
+
+#%%
+fileid = pd.DataFrame({'id': subm["id"]})
+predictionsf = pd.concat([fileid, pd.DataFrame(preds, columns = label_cols)], axis=1)
+predictionsf.to_csv('predictionsf.csv', index=False)
+
+#%%
